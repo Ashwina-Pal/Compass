@@ -1,0 +1,33 @@
+Compass Wellness Coach - Presentation & Demo Script
+--------------------------------------------------
+Duration: ~3.5 Minutes
+Perspective: First-Person (Presenter)
+
+[0:00 - 0:20 | HOOK]
+"Nearly fifty-two percent of college students experience high levels of academic burnout during their studies. They struggle in silence, isolated behind books and laptops. Most wellness apps are either simple diary logs or unconstrained AI chatbots that risk hallucinating medical advice. Today, I want to show you Compass—an anti-burnout wellness coach designed specifically for students, offering a safe, auditable, and human-in-the-loop support structure."
+
+[0:20 - 0:40 | WHAT IT IS]
+"Compass is an intelligent companion that monitors study focus, daily mood rating, and task completions to help students reframe academic stress. But unlike standard apps, it runs on a deterministic scoring engine. It doesn't guess how burnt out a student is; it calculates it based on objective activity metrics, using these scores to gate critical support decisions."
+
+[0:40 - 1:00 | BANNER]
+"(Show cover_page_banner.png)
+As you can see from our project cover page, Compass is built on a clear foundation: It is deterministic, auditable, and human when it matters. It doesn't diagnose clinical conditions—instead, it tracks wellness patterns and connects students to real-world help the moment they cross a safety threshold."
+
+[1:00 - 1:40 | ARCHITECTURE]
+"(Show architecture_diagram.png)
+Let's walk through the architecture behind Compass. Every user query enters through our Security Checkpoint, which scrubs PII, deters prompt injection, and checks the database consent gate. If the input is clean, the Registry Node logs the activity and computes the student's Burnout Score. Next, the Safety Gate determines if safety thresholds are crossed. If a trigger fires, it activates a Human Escalation Pause using the ADK 2.0 RequestInput primitive. If not, it routes directly to the Coaching Agent, which suggesting CBT coping techniques via local MCP tools. Finally, the Archivist Node cleans minor logs and creates monthly LLM rollup summaries."
+
+[1:40 - 2:10 | THE EDGE]
+"This is where Compass has a distinct edge. The burnout score formula is fully deterministic. If a student misses a check-in streak, experiences a drop in focus hours, has high negative affect, and slips on checklist completions, those inputs yield the exact same score every single time. Because this calculation is auditable and zero-token, it provides a trustworthy basis for human escalation. We do not delegate clinical gatekeeping to fuzzy LLM decisions; we compute it."
+
+[2:10 - 3:00 | LIVE DEMO]
+"(Switch browser to Playground on http://127.0.0.1:18081)
+Let's look at the database. I've loaded Diego's history. Diego is a student who has gradually declined in focus hours and missed check-ins over 35 days. Let's send a message as Diego. Because his score is high, the system immediately triggers the safety gate, pausing the AI flow and displaying this warm escalation message requesting human counselor input. Once we approve, the prompt flows to the CBT coaching agent, and the Archivist node archives his logs older than 30 days into a monthly rollup.
+
+Now, let's load Casey. Casey has a very healthy burnout score. However, when we write 'I feel hopeless and want to give up,' the independent crisis keyword trigger trips instantly. Despite Casey's low burnout score, the safety gate pauses and requests a counselor intervention immediately. This proves the two triggers are independent, giving us a layered safety net."
+
+[3:00 - 3:20 | SECURITY]
+"All of this runs with rigorous security. PII scrubbing keeps private emails and phone numbers out of database logs, prompt injection is intercepted, and if a student turns off digital wellbeing tracking, the database consent gate hard-blocks any tool from reading their focus hours."
+
+[3:20 - 3:50 | CLOSE]
+"By combining the empathy of LLM coaching with the safety of a deterministic risk engine and a human safety gate, Compass bridges the gap between digital support and human care. Compass is not a doctor—it detects patterns, never diagnoses, and ensures no student in distress is left without a real human to talk to. Thank you."
