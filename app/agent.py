@@ -193,8 +193,14 @@ def registry_node(ctx: Context, node_input: str) -> str:
         conn.close()
 
     # Crisis keyword check (independent trigger)
-    crisis_keywords = ["suicide", "end my life", "hopeless", "want to die", "pointless", "no way out", "give up on everything"]
-    has_crisis = any(kw in node_input.lower() for kw in crisis_keywords)
+    strong_keywords = ["suicide", "end my life", "want to die", "no way out", "give up on everything"]
+    weak_keywords = ["hopeless", "pointless"]
+    
+    node_input_lower = node_input.lower()
+    strong_count = sum(node_input_lower.count(kw) for kw in strong_keywords)
+    weak_count = sum(node_input_lower.count(kw) for kw in weak_keywords)
+    
+    has_crisis = (strong_count >= 1) or (weak_count >= 2)
     ctx.state["crisis_flag"] = 1 if has_crisis else 0
     
     return node_input
@@ -238,7 +244,7 @@ async def safety_gate(ctx: Context, node_input: str) -> str:
     score = ctx.state.get("burnout_risk_score", 0.0)
     crisis_flag = ctx.state.get("crisis_flag", 0)
     
-    if score >= config.burnout_risk_threshold or crisis_flag:
+    if round(score, 2) >= config.burnout_risk_threshold or crisis_flag:
         # High risk! Call safety agent dynamically to phrase warm escalation
         # Wire safety toolset so the agent has access to burnout trends
         safety_gate_agent.tools = [safety_toolset]
@@ -412,6 +418,6 @@ workflow = Workflow(
 root_agent = workflow
 
 app = App(
-    name="compass-coach",
+    name="app",
     root_agent=workflow
 )

@@ -53,6 +53,15 @@ class SettingsRequest(BaseModel):
 async def chat(request: ChatRequest):
     """Chat endpoint to send messages or resume the workflow after a pause."""
     try:
+        try:
+            await runner.session_service.create_session(
+                app_name=runner.app_name,
+                user_id=request.user_id,
+                session_id=request.session_id,
+            )
+        except Exception as e:
+            print(f"Session creation note: {e}")
+        
         if request.is_resume:
             if not request.interrupt_id:
                 raise HTTPException(status_code=400, detail="Missing interrupt_id for resuming.")

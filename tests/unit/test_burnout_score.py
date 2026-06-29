@@ -180,10 +180,45 @@ def test_crisis_keyword_give_up():
     registry_node(ctx, "I want to give up on everything.")
     assert ctx.state["crisis_flag"] == 1
 
+def test_crisis_single_weak_does_not_trigger():
+    ctx = MockContext()
+    registry_node(ctx, "I feel hopeless today.")
+    assert ctx.state["crisis_flag"] == 0
+
+def test_crisis_multiple_weak_triggers():
+    ctx = MockContext()
+    registry_node(ctx, "Everything is hopeless and pointless.")
+    assert ctx.state["crisis_flag"] == 1
+
+def test_crisis_same_weak_repeated_triggers():
+    ctx = MockContext()
+    registry_node(ctx, "It's hopeless, totally hopeless.")
+    assert ctx.state["crisis_flag"] == 1
+
+def test_crisis_one_weak_one_strong_triggers():
+    ctx = MockContext()
+    registry_node(ctx, "I feel hopeless and want to end my life.")
+    assert ctx.state["crisis_flag"] == 1
+
 def test_false_positive_emotional_not_crisis():
     ctx = MockContext()
     registry_node(ctx, "I am so sad and stressed about finals, but I want to keep trying.")
     assert ctx.state["crisis_flag"] == 0
+
+def test_crisis_lecture_pointless_not_crisis():
+    ctx = MockContext()
+    registry_node(ctx, "This lecture is pointless and I am so behind")
+    assert ctx.state["crisis_flag"] == 0
+
+def test_crisis_exam_hopeless_not_crisis():
+    ctx = MockContext()
+    registry_node(ctx, "I feel hopeless about this exam tomorrow")
+    assert ctx.state["crisis_flag"] == 0
+
+def test_crisis_hopeless_and_pointless_is_crisis():
+    ctx = MockContext()
+    registry_node(ctx, "I feel hopeless and everything feels pointless lately")
+    assert ctx.state["crisis_flag"] == 1
 
 # ---------------------------------------------------------------------------
 # Determinism Tests
