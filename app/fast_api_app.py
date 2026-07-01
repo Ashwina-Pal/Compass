@@ -8,7 +8,7 @@ from typing import Optional, Any
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
-from app.agent import app as adk_app
+from app.agent import app as adk_app, generate_achievements
 from app.db import get_db_connection, get_setting, set_setting
 
 # Create FastAPI app
@@ -169,6 +169,34 @@ async def update_settings(request: SettingsRequest):
     val_str = "1" if request.digital_wellbeing_permitted else "0"
     set_setting("digital_wellbeing_permitted", val_str)
     return {"status": "ok", "digital_wellbeing_permitted": request.digital_wellbeing_permitted}
+
+@app.get("/achievements/{user_id}")
+async def get_achievements(user_id: str):
+    """Retrieve all achievements for a given user, generating new ones first."""
+    try:
+        generate_achievements(user_id, source="api")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    conn = get_db_connection()
+    try:
+        rows = conn.execute(
+            """SELECT id, user_id, title, description, category, date_earned, source, icon_key 
+               FROM achievements 
+               WHERE user_id = ? 
+               ORDER BY date_earned DESC""",
+            (user_id,)
+        ).fetchall()
+        
+        achievements_list = [dict(row) for row in rows]
+        return {
+            "has_achievements": len(achievements_list) > 0,
+            "achievements": achievements_list
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     import uvicorn

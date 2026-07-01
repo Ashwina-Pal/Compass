@@ -197,3 +197,31 @@ def test_streak_achievement_single_entry_consecutive_days():
     # Under new logic, this should be exactly 1 focus streak achievement at the start of the qualifying period.
     assert len(focus_streaks) == 1
 
+def test_get_achievements_api_route():
+    """Tests the GET /achievements/{user_id} endpoint, verifying generation and retrieval."""
+    from fastapi.testclient import TestClient
+    from app.fast_api_app import app
+    
+    today = datetime.date.today()
+    conn = get_db_connection()
+    
+    # Seed data for api_test_user to earn a Focus streak achievement
+    with conn:
+        for i in range(7):
+            date_str = (today - datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+            conn.execute("INSERT INTO checkins (user_id, date, mood_rating) VALUES (?, ?, ?)",
+                         ("api_test_user", date_str, 4))
+            conn.execute("INSERT INTO timer_events (user_id, date, duration_minutes) VALUES (?, ?, ?)",
+                         ("api_test_user", date_str, 60.0))
+                         
+    client = TestClient(app)
+    response = client.get("/achievements/api_test_user")
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert data["has_achievements"] is True
+    assert len(data["achievements"]) > 0
+    assert data["achievements"][0]["title"] == "Focus streak"
+    assert data["achievements"][0]["user_id"] == "api_test_user"
+
+
