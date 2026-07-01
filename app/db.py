@@ -106,6 +106,21 @@ def init_db():
                 )
             """)
             
+            # 8. Achievements
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS achievements (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    date_earned TEXT NOT NULL,  -- YYYY-MM-DD
+                    source TEXT NOT NULL,
+                    icon_key TEXT NOT NULL,
+                    UNIQUE(user_id, title, date_earned)
+                )
+            """)
+            
             # Set default digital_wellbeing_permitted to '1' (True) if not set
             cursor = conn.execute("SELECT value FROM user_settings WHERE key = 'digital_wellbeing_permitted'")
             if cursor.fetchone() is None:

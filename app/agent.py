@@ -151,6 +151,160 @@ def calculate_burnout_metrics(user_id: str) -> tuple[float, float, float, float]
     finally:
         conn.close()
 
+def generate_achievements(user_id: str, source: str = "rollup") -> list[dict]:
+    """Generates and persists achievements for a user based on deterministic criteria."""
+    import datetime
+    from app.db import get_db_connection
+
+    conn = get_db_connection()
+    achievements_earned = []
+    try:
+        today = datetime.date.today()
+        # Fetch check-ins, timer events, and checklists for the last 35 days to ensure full coverage of rolling windows
+        start_fetch_date = (today - datetime.timedelta(days=35)).strftime("%Y-%m-%d")
+
+        # 1. Fetch check-in dates
+        rows = conn.execute(
+            "SELECT DISTINCT date FROM checkins WHERE user_id = ? AND date >= ?",
+            (user_id, start_fetch_date)
+        ).fetchall()
+        checkin_dates = {datetime.datetime.strptime(r["date"], "%Y-%m-%d").date() for r in rows}
+
+        # 2. Fetch timer events
+        rows = conn.execute(
+            "SELECT date, duration_minutes FROM timer_events WHERE user_id = ? AND date >= ?",
+            (user_id, start_fetch_date)
+        ).fetchall()
+        timer_by_date = {}
+        for r in rows:
+            d = datetime.datetime.strptime(r["date"], "%Y-%m-%d").date()
+            timer_by_date[d] = timer_by_date.get(d, 0.0) + r["duration_minutes"]
+
+        # 3. Fetch checklist events
+        rows = conn.execute(
+            "SELECT date, completed_count, total_count FROM checklist_events WHERE user_id = ? AND date >= ?",
+            (user_id, start_fetch_date)
+        ).fetchall()
+        checklist_by_date = {}
+        for r in rows:
+            d = datetime.datetime.strptime(r["date"], "%Y-%m-%d").date()
+            completed, total = r["completed_count"], r["total_count"]
+            if d not in checklist_by_date:
+                checklist_by_date[d] = {"completed": 0, "total": 0}
+            checklist_by_date[d]["completed"] += completed
+            checklist_by_date[d]["total"] += total
+
+        def check_window_criteria(w_start: datetime.date, w_end: datetime.date) -> tuple[bool, bool]:
+            # Focus Streak: 5+ cumulative hours (300 mins) and check-ins on 5+ days
+            focus_mins = 0.0
+            checkin_count = 0
+            curr = w_start
+            while curr <= w_end:
+                if curr in checkin_dates:
+                    checkin_count += 1
+                focus_mins += timer_by_date.get(curr, 0.0)
+                curr += datetime.timedelta(days=1)
+            focus_streak_met = (focus_mins >= 300.0) and (checkin_count >= 5)
+
+            # Consistency Badge: checklist completion ratio >= 0.8 (require real output)
+            checklist_days = 0
+            completed_sum = 0
+            total_sum = 0
+            curr = w_start
+            while curr <= w_end:
+                if curr in checklist_by_date:
+                    completed_sum += checklist_by_date[curr]["completed"]
+                    total_sum += checklist_by_date[curr]["total"]
+                    if checklist_by_date[curr]["total"] > 0:
+                        checklist_days += 1
+                curr += datetime.timedelta(days=1)
+            consistency_badge_met = (checklist_days >= 3) and ((completed_sum / total_sum) >= 0.8)
+
+            return focus_streak_met, consistency_badge_met
+
+        earned_set = []
+
+        # Evaluate chronologically to track status transitions across days
+        prev_focus_met = False
+        prev_consistency_met = False
+
+        for i in range(24, -1, -1):
+            end_date = today - datetime.timedelta(days=i)
+            start_date = end_date - datetime.timedelta(days=6)
+
+            focus_met, consistency_met = check_window_criteria(start_date, end_date)
+
+            if focus_met:
+                if not prev_focus_met:
+                    earned_set.append({
+                        "title": "Focus streak",
+                        "description": "Logged 5+ cumulative focus hours and checked in on 5+ days over a 7-day period.",
+                        "category": "focus",
+                        "date_earned": end_date.strftime("%Y-%m-%d"),
+                        "icon_key": "focus_streak"
+                    })
+                prev_focus_met = True
+            else:
+                prev_focus_met = False
+
+            if consistency_met:
+                if not prev_consistency_met:
+                    earned_set.append({
+                        "title": "Consistency badge",
+                        "description": "Achieved checklist completion ratio of 80% or higher over a 7-day period.",
+                        "category": "consistency",
+                        "date_earned": end_date.strftime("%Y-%m-%d"),
+                        "icon_key": "consistency_badge"
+                    })
+                prev_consistency_met = True
+            else:
+                prev_consistency_met = False
+
+        # Check "Monthly momentum": either base criterion satisfied in 3+ distinct weeks in the last 30 days
+        # Require that at least one of those qualifying weeks falls within the last 14 days (Week 1 or Week 2)
+        # And ensure they are not in an active decline: Week 1 focus minutes must not be < 50% of Week 2's focus minutes (if Week 2 has focus)
+        satisfied_weeks = []
+        for w in range(4):
+            w_end = today - datetime.timedelta(days=w * 7)
+            w_start = w_end - datetime.timedelta(days=6)
+            f_met, c_met = check_window_criteria(w_start, w_end)
+            if f_met or c_met:
+                satisfied_weeks.append(w)
+
+        # Active decline check
+        week1_focus = sum(timer_by_date.get(today - datetime.timedelta(days=d), 0.0) for d in range(7))
+        week2_focus = sum(timer_by_date.get(today - datetime.timedelta(days=d), 0.0) for d in range(7, 14))
+        active_decline = (week2_focus > 0.0) and (week1_focus < 0.5 * week2_focus)
+
+        if len(satisfied_weeks) >= 3 and any(w in [0, 1] for w in satisfied_weeks) and not active_decline:
+            # Anchor to the first day of the current month to prevent duplicate rows across consecutive days
+            earned_set.append({
+                "title": "Monthly momentum",
+                "description": "Maintained consistent wellbeing and focus habits across 3+ weeks in the last 30 days.",
+                "category": "momentum",
+                "date_earned": today.replace(day=1).strftime("%Y-%m-%d"),
+                "icon_key": "monthly_momentum"
+            })
+
+        # Write to database using INSERT OR IGNORE
+        if earned_set:
+            with conn:
+                for ach in earned_set:
+                    conn.execute(
+                        """INSERT OR IGNORE INTO achievements 
+                           (user_id, title, description, category, date_earned, source, icon_key)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (user_id, ach["title"], ach["description"], ach["category"], ach["date_earned"], source, ach["icon_key"])
+                    )
+                    ach["user_id"] = user_id
+                    ach["source"] = source
+            achievements_earned = earned_set
+
+    finally:
+        conn.close()
+
+    return achievements_earned
+
 def registry_node(ctx: Context, node_input: str) -> str:
     """Saves user message to db and computes burnout risk score deterministically."""
     # Write empty response placeholder for chat event, to update in archivist_node
@@ -330,6 +484,7 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
 
     # 2. Database archive/rollup logic
     conn = get_db_connection()
+    rollup_triggered = False
     try:
         today = datetime.date.today()
         # Find oldest entry date
@@ -372,6 +527,7 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
                         conn.execute("DELETE FROM checkins WHERE user_id = ? AND date < ?", (ctx.user_id, limit_date))
                         conn.execute("DELETE FROM timer_events WHERE user_id = ? AND date < ?", (ctx.user_id, limit_date))
                         conn.execute("DELETE FROM checklist_events WHERE user_id = ? AND date < ?", (ctx.user_id, limit_date))
+                    rollup_triggered = True
             
             # Pruning minor entries > 7 days
             limit_7d_date = (today - datetime.timedelta(days=7)).strftime("%Y-%m-%d")
@@ -382,6 +538,9 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
                 )
     finally:
         conn.close()
+
+    if rollup_triggered:
+        generate_achievements(ctx.user_id, source="rollup")
 
     return node_input
 
