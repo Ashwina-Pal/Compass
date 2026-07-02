@@ -131,6 +131,7 @@ async def log_checklist(request: ChecklistRequest):
                    VALUES (?, ?, ?, ?)""",
                 (request.user_id, date_str, request.completed_count, request.total_count)
             )
+        generate_achievements(request.user_id)
         return {"status": "ok", "message": f"Checklist progress logged for {date_str}."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -150,6 +151,7 @@ async def log_timer(request: TimerRequest):
                    VALUES (?, ?, ?)""",
                 (request.user_id, date_str, request.duration_minutes)
             )
+        generate_achievements(request.user_id)
         return {"status": "ok", "message": f"Focus duration timer logged for {date_str}."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

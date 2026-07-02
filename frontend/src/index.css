@@ -1,0 +1,266 @@
+:root {
+  --color-bg: #FDFBF7;
+  --color-text: #3D3530;
+  --color-primary: #8FA89B;
+  --color-accent: #EAD5C3;
+  
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+/* App container - 3 columns side-by-side */
+.app-container {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Panel styles */
+.panel {
+  flex: 1;
+  width: 33.333%;
+  padding: 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.panel:not(:last-child) {
+  border-right: 1px solid var(--color-accent);
+}
+
+.panel-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--color-text);
+  border-bottom: 2px solid var(--color-primary);
+  padding-bottom: 0.5rem;
+}
+
+/* Form inputs & buttons (flat design, no shadows/gradients/animations) */
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.text-input {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-primary);
+  background-color: transparent;
+  color: var(--color-text);
+  outline: none;
+}
+
+.text-input:focus {
+  border-color: var(--color-text);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: var(--color-bg);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn:hover {
+  background-color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.btn-accent {
+  background-color: var(--color-accent);
+  color: var(--color-text);
+  border-color: var(--color-accent);
+}
+
+.btn-accent:hover {
+  background-color: var(--color-primary);
+  color: var(--color-bg);
+  border-color: var(--color-primary);
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Checklist Items */
+.task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.task-checkbox {
+  width: 1.2rem;
+  height: 1.2rem;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.task-text {
+  cursor: pointer;
+}
+
+.task-text.completed {
+  text-decoration: line-through;
+  color: var(--color-primary);
+}
+
+/* Timer Display */
+.timer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.timer-display {
+  font-size: 4rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  letter-spacing: 0.1em;
+  color: var(--color-text);
+}
+
+/* Trophy Wall & Card grid */
+.trophy-wall {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.refresh-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.achievement-card {
+  border: 1px solid var(--color-accent);
+  background-color: transparent;
+  padding: 1rem;
+}
+
+.achievement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.achievement-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  background-color: var(--color-primary);
+  color: var(--color-bg);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.achievement-desc {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.achievement-date {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+}
+
+/* Empty Wall display */
+.empty-wall {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  flex-grow: 1;
+}
+
+.empty-wall-heading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+.empty-wall-subtext {
+  font-size: 1rem;
+  color: var(--color-text);
+  max-width: 320px;
+}
+
+/* Status States */
+.status-text {
+  font-size: 1rem;
+  margin-top: auto;
+  margin-bottom: auto;
+  text-align: center;
+}
+
+.error-text {
+  color: #c0392b;
+}
