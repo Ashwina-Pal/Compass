@@ -10,7 +10,7 @@ Compass is an anti-burnout wellness coaching app for students. It pairs cognitiv
 - [x] **Long-Running Operations** — Dedicated `RequestInput` human-in-the-loop pause and resume rehydration.
 - [x] **Sessions & State** — Stateful coordination and audit trails using the ADK `ctx.state` across all 5 graph nodes.
 - [x] **Security** — Active PII scrubbing, prompt injection sanitization, a database-level consent backstop, and structured audit logs.
-- [x] **Evaluation** — Extensive 21-case zero-token test suite verifying scoring accuracy, triggers, and boundary conditions.
+✅ Evaluation — 35-case zero-token test suite (scoring, routing, boundary conditions, achievement generation, streak deduplication, decline-aware monthly momentum).
 - [x] **Agents CLI** — Scaffolded structure, `GEMINI.md` coding guide, and Makefile playground automation.
 
 ---
@@ -40,9 +40,18 @@ graph TD
 
 ---
 
+## 🖥️ Frontend (React + Vite)
+A four-tab React interface at `frontend/` connects directly to the FastAPI bridge:
+- **Tasks** — Add and complete tasks; each completion logs to `checklist_events` and triggers achievement recalculation.
+- **Timer** — Start/pause/log focus sessions; each logged session writes to `timer_events` and triggers achievement recalculation.
+- **Achievements** — Live Trophy Wall showing earned achievements from the DB. Empty state: "Your wall is waiting." User selector dropdown (riya/sam/bex/diego/casey) for switching demo personas.
+- **Chat** — ADK playground (http://127.0.0.1:18081) embedded via iframe, showing the full agent graph and trace view.
+
+---
+
 ## 🚦 Zero-Token Testing Confusion Matrix
 
-The scoring and routing logic is verified using 21 zero-token unit tests:
+The scoring and routing logic is verified using 35 zero-token unit tests:
 - **True Positives (TP):** 4 (High risk / crisis keywords correctly triggered escalation)
 - **False Positives (FP):** 0 (Emotional but non-crisis expressions correctly skipped escalation)
 - **True Negatives (TN):** 2 (Low-risk statements correctly bypassed escalation)
@@ -55,7 +64,7 @@ The scoring and routing logic is verified using 21 zero-token unit tests:
 
 - **Sam** (Steady) — 45 days of consistent daily check-ins showing stable low risk. The baseline standard.
 - **Bex** (Boundary) — 10 days of data carefully tuned to land the `burnout_risk_score` at exactly `0.75`.
-- **Diego** (Decline) — 35 days of data showing a gradual downward trend in focus and check-ins, crossing the `0.75` threshold and the 30-day archive boundary.
+- **Diego** (Decline) — 48 days of data showing a gradual downward trend in focus and check-ins, crossing the `0.75` threshold and the 30-day archive boundary.
 - **Casey** (Crisis-Independent) — 6 days of low-risk indicators, but a single chat message containing a distress pattern triggers safety gate escalation independent of the score.
 
 ---
@@ -88,6 +97,26 @@ uv run adk web app --host 127.0.0.1 --port 18081
 make playground
 ```
 Open `http://127.0.0.1:18081` in your browser.
+
+### Run the Full Stack (Frontend + Backend + Playground)
+Start three processes in separate terminals:
+
+Terminal 1 — FastAPI bridge:
+```bash
+uv run uvicorn app.fast_api_app:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Terminal 2 — ADK playground:
+```bash
+uv run adk web app --host 127.0.0.1 --port 18081 --reload_agents
+```
+
+Terminal 3 — React frontend:
+```bash
+cd frontend
+npm run dev
+```
+Open http://localhost:5173 in your browser.
 
 ### Run Unit Tests
 ```bash

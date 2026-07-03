@@ -64,8 +64,21 @@ The Model Context Protocol (MCP) server runs locally and exposes four tools:
 
 ---
 
-## 7. Demo Walkthrough
+## 7. Achievement System
+A deterministic, output-based achievement generation system runs alongside the agent graph. Achievements are computed from logged timer and checklist data only — never from conversational content, keeping the system auditable and not gameable.
+
+Three criteria, all requiring sustained weekly-window output:
+- **Focus streak**: 5+ cumulative hours logged AND check-ins on 5+ of 7 days in a rolling window. Only awarded at streak start, not every day it continues.
+- **Consistency badge**: Checklist completion ≥80% across a 7-day window with activity on at least 3 distinct days.
+- **Monthly momentum**: Either base criterion met in 3+ distinct weeks within 30 days, with at least one qualifying week in the last 14 days AND Week 1 focus minutes not less than 50% of Week 2 (decline-aware — withholds the badge during active collapse).
+
+Known limitation: achievement generation is driven by structured logged data (timer, checklist) rather than conversational content. Chat interactions inform the coaching agent but do not directly unlock achievements in the current version.
+
+---
+
+## 8. Demo Walkthrough
 1. **Sam (Steady):** Shows how the system stays quiet and provides normal CBT coaching when indicators are positive.
 2. **Bex (Boundary):** Demonstrates precision routing at the exact `0.75` score threshold.
 3. **Diego (Decline):** Illustrates the 30-day rollup archiver summarizing a downward slope in study focus.
 4. **Casey (Crisis):** Demonstrates that crisis keywords trigger human-escalation pauses instantly, regardless of the burnout score.
+5. **Frontend demo** — Switch to http://localhost:5173. Use the user dropdown to cycle through personas: riya (empty wall, honest new-user state), sam (three earned trophies), diego (one historical trophy, no Monthly momentum due to active decline), bex (one Focus streak, correctly calibrated). Demonstrate Tasks and Timer logging triggering automatic achievement recalculation.
