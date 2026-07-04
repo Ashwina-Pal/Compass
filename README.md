@@ -62,10 +62,10 @@ The scoring and routing logic is verified using 35 zero-token unit tests:
 
 ## 👥 Seeded Demo Personas (Phase 9)
 
-- **Sam** (Steady) — 45 days of consistent daily check-ins showing stable low risk. The baseline standard.
-- **Bex** (Boundary) — 10 days of data carefully tuned to land the `burnout_risk_score` at exactly `0.75`.
-- **Diego** (Decline) — 48 days of data showing a gradual downward trend in focus and check-ins, crossing the `0.75` threshold and the 30-day archive boundary.
-- **Casey** (Crisis-Independent) — 6 days of low-risk indicators, but a single chat message containing a distress pattern triggers safety gate escalation independent of the score.
+- **Sam** (Steady) — 30 days of consistent activity data showing stable low risk. Earned 3 unique achievements (Consistency badge, Focus streak, Monthly momentum). Shows how the system stays quiet and provides normal CBT coaching when indicators are positive.
+- **Bex** (Boundary) — 10 days of check-ins and timer events carefully tuned to land the `burnout_risk_score` at exactly `0.75`. Has 1 Focus streak achievement. Demonstrates precision routing at the exact 0.75 score threshold.
+- **Diego** (Decline) — 35+ days of database history (pruned to 26 checkins, 31 timers, 32 checklists in active DB after archive rollup) showing a gradual downward trend in focus and check-ins, crossing the `0.75` threshold. Has historical Focus streak but no Monthly momentum due to active decline.
+- **Casey** (Crisis-Independent) — 6-8 days of low-risk activity indicators, but a single chat message containing a distress pattern triggers safety gate escalation independent of the score. Has 1 Consistency badge achievement.
 
 ---
 
