@@ -220,6 +220,16 @@ def test_crisis_hopeless_and_pointless_is_crisis():
     registry_node(ctx, "I feel hopeless and everything feels pointless lately")
     assert ctx.state["crisis_flag"] == 1
 
+def test_crisis_new_strong_keyword():
+    ctx = MockContext()
+    registry_node(ctx, "I feel like everyone would be better off without me today.")
+    assert ctx.state["crisis_flag"] == 1
+
+def test_crisis_new_weak_keywords_co_occur():
+    ctx = MockContext()
+    registry_node(ctx, "I am totally exhausted and feel worthless.")
+    assert ctx.state["crisis_flag"] == 1
+
 # ---------------------------------------------------------------------------
 # Determinism Tests
 # ---------------------------------------------------------------------------

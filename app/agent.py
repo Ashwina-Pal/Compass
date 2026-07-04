@@ -85,6 +85,7 @@ def security_checkpoint(ctx: Context, node_input: str) -> str:
 # ---------------------------------------------------------------------------
 def calculate_burnout_metrics(user_id: str) -> tuple[float, float, float, float]:
     """Calculate the four normalized metrics from the database."""
+    user_id = user_id.lower() if user_id else ""
     conn = get_db_connection()
     try:
         today = datetime.date.today()
@@ -153,6 +154,7 @@ def calculate_burnout_metrics(user_id: str) -> tuple[float, float, float, float]
 
 def generate_achievements(user_id: str, source: str = "rollup") -> list[dict]:
     """Generates and persists achievements for a user based on deterministic criteria."""
+    user_id = user_id.lower() if user_id else ""
     import datetime
     from app.db import get_db_connection
 
@@ -307,20 +309,21 @@ def generate_achievements(user_id: str, source: str = "rollup") -> list[dict]:
 
 def registry_node(ctx: Context, node_input: str) -> str:
     """Saves user message to db and computes burnout risk score deterministically."""
+    user_id = ctx.user_id.lower() if ctx.user_id else ""
     # Write empty response placeholder for chat event, to update in archivist_node
     conn = get_db_connection()
     try:
         with conn:
             cursor = conn.execute(
                 "INSERT INTO chat_events (user_id, message, response) VALUES (?, ?, ?)",
-                (ctx.user_id, node_input, "")
+                (user_id, node_input, "")
             )
             ctx.state["chat_event_id"] = cursor.lastrowid
     finally:
         conn.close()
         
     # Calculate burnout risk score
-    m1, m2, m3, m4 = calculate_burnout_metrics(ctx.user_id)
+    m1, m2, m3, m4 = calculate_burnout_metrics(user_id)
     score = 0.35 * m1 + 0.30 * m2 + 0.20 * m3 + 0.15 * (1.0 - m4)
     # Clamp score between 0 and 1
     score = max(0.0, min(score, 1.0))
@@ -341,14 +344,23 @@ def registry_node(ctx: Context, node_input: str) -> str:
                 """INSERT INTO burnout_scores 
                    (user_id, date, score, missed_checkin_streak_norm, focus_duration_decline_7d_norm, negative_affect_freq_norm, checklist_completion_ratio_7d) 
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (ctx.user_id, datetime.date.today().strftime("%Y-%m-%d"), score, m1, m2, m3, m4)
+                (user_id, datetime.date.today().strftime("%Y-%m-%d"), score, m1, m2, m3, m4)
             )
     finally:
         conn.close()
 
     # Crisis keyword check (independent trigger)
-    strong_keywords = ["suicide", "end my life", "want to die", "no way out", "give up on everything"]
-    weak_keywords = ["hopeless", "pointless"]
+    strong_keywords = [
+        "suicide", "end my life", "want to die", "no way out", "give up on everything",
+        "don't want to be here anymore", "can't do this anymore", "what's the point of living",
+        "rather not wake up", "everyone would be better off without me", "tired of being alive",
+        "end it all", "make it stop permanently", "i'm done with everything", "nothing matters anymore"
+    ]
+    weak_keywords = [
+        "hopeless", "pointless",
+        "exhausted", "worthless", "trapped", "disappear",
+        "burden", "can't go on", "no one cares", "give up"
+    ]
     
     node_input_lower = node_input.lower()
     strong_count = sum(node_input_lower.count(kw) for kw in strong_keywords)
@@ -483,12 +495,13 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
             conn.close()
 
     # 2. Database archive/rollup logic
+    user_id = ctx.user_id.lower() if ctx.user_id else ""
     conn = get_db_connection()
     rollup_triggered = False
     try:
         today = datetime.date.today()
         # Find oldest entry date
-        cursor = conn.execute("SELECT MIN(date) FROM checkins WHERE user_id = ?", (ctx.user_id,))
+        cursor = conn.execute("SELECT MIN(date) FROM checkins WHERE user_id = ?", (user_id,))
         oldest_date_str = cursor.fetchone()[0]
         
         if oldest_date_str:
@@ -502,7 +515,7 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
                 # --- FIX: Fetch ALL historical check-ins to provide full month context to the LLM ---
                 all_rows = conn.execute(
                     "SELECT mood_rating, negative_affect, notes, date FROM checkins WHERE user_id = ? ORDER BY date ASC",
-                    (ctx.user_id,)
+                    (user_id,)
                 ).fetchall()
                 
                 if all_rows:
@@ -521,12 +534,12 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
                         conn.execute(
                             """INSERT INTO archive_rollups (user_id, start_date, end_date, rollup_type, summary)
                                VALUES (?, ?, ?, ?, ?)""",
-                            (ctx.user_id, start_date, end_date, "monthly", rollup_text)
+                            (user_id, start_date, end_date, "monthly", rollup_text)
                         )
                         # --- Keep Pruning Strict: Only delete details older than 30 days ---
-                        conn.execute("DELETE FROM checkins WHERE user_id = ? AND date < ?", (ctx.user_id, limit_date))
-                        conn.execute("DELETE FROM timer_events WHERE user_id = ? AND date < ?", (ctx.user_id, limit_date))
-                        conn.execute("DELETE FROM checklist_events WHERE user_id = ? AND date < ?", (ctx.user_id, limit_date))
+                        conn.execute("DELETE FROM checkins WHERE user_id = ? AND date < ?", (user_id, limit_date))
+                        conn.execute("DELETE FROM timer_events WHERE user_id = ? AND date < ?", (user_id, limit_date))
+                        conn.execute("DELETE FROM checklist_events WHERE user_id = ? AND date < ?", (user_id, limit_date))
                     rollup_triggered = True
             
             # Pruning minor entries > 7 days
@@ -534,13 +547,13 @@ async def archivist_node(ctx: Context, node_input: str) -> str:
             with conn:
                 conn.execute(
                     "DELETE FROM timer_events WHERE user_id = ? AND date < ? AND duration_minutes < 5.0",
-                    (ctx.user_id, limit_7d_date)
+                    (user_id, limit_7d_date)
                 )
     finally:
         conn.close()
 
     if rollup_triggered:
-        generate_achievements(ctx.user_id, source="rollup")
+        generate_achievements(user_id, source="rollup")
 
     return node_input
 

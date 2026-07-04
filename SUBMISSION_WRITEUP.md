@@ -34,7 +34,7 @@ The safety mechanism is designed with a graph-level guarantee: **the coaching ag
 
 Two independent triggers converge on the same `RequestInput` pause:
 1. **Deterministic Score Threshold:** A `burnout_risk_score` exceeding `0.75` (calculated by combining missed check-in streaks, decline in study focus timer logs, negative affect frequency, and checklist completion ratios).
-2. **Crisis Keyword Flag:** Immediate pattern matching on distress expressions (e.g., hopelessness, self-harm keywords).
+2. **Crisis Keyword Flag:** Immediate pattern matching on distress expressions (e.g., hopelessness, self-harm keywords). The crisis keyword list was deliberately kept conservative (strong words specific enough to minimize false positives in everyday student speech, weak words requiring co-occurrence) and is designed to be extended as real usage data reveals patterns.
 
 If either trigger is tripped, the safety gate routes execution to `human_escalation_pause`, which yields a `RequestInput` action. The execution suspends until a counselor or supervisor provides a response, which is then recorded in `ctx.state` before routing the clean flow to the coaching agent.
 
@@ -82,3 +82,64 @@ Known limitation: achievement generation is driven by structured logged data (ti
 3. **Diego (Decline):** Illustrates the 30-day rollup archiver summarizing a downward slope in study focus.
 4. **Casey (Crisis):** Demonstrates that crisis keywords trigger human-escalation pauses instantly, regardless of the burnout score.
 5. **Frontend demo** — Switch to http://localhost:5173. Use the user dropdown to cycle through personas: riya (empty wall, honest new-user state), sam (three earned trophies), diego (one historical trophy, no Monthly momentum due to active decline), bex (one Focus streak, correctly calibrated). Demonstrate Tasks and Timer logging triggering automatic achievement recalculation.
+
+---
+
+## 9. Future Goals & Roadmap
+
+The current version of Compass establishes the core architecture and safety
+infrastructure. The following directions represent the next phase of development:
+
+### Coaching & Conversation Quality
+- **More humanized coaching responses** — the current CBT reframing is
+  evidence-grounded but can feel clinical. Future iterations would fine-tune
+  the coaching agent's tone to feel more like a peer mentor than a textbook,
+  adapting its communication style to the student's apparent emotional state
+  in the moment.
+- **Achievement-aware coaching** — the coaching agent currently has no
+  awareness of the Trophy Wall. A future version would let the agent reference
+  a student's real historical wins ("you finished that algorithms assignment
+  three days early last month") to counter negativity bias with concrete,
+  personalized evidence rather than generic encouragement.
+- **Conversational achievement logging** — currently, achievements are driven
+  purely by structured logged data (timer, checklist). A future iteration would
+  allow the coaching agent to surface and credit accomplishments mentioned in
+  conversation, keeping the system auditable while expanding what counts as
+  evidence of effort.
+
+### Risk Scoring
+- **Distinguishing absence from struggle** — the current burnout risk formula
+  treats prolonged feature non-use the same as poor performance within a metric.
+  A student who stopped using the checklist because they're overwhelmed and a
+  student who stopped because their semester ended produce the same score.
+  A future iteration would explicitly distinguish "no data logged" from "data
+  logged showing decline," using absence as a separate signal rather than
+  collapsing it into the same weight as active underperformance.
+- **Richer signal sources** — the current four-input formula (check-in streak,
+  focus duration trend, negative affect frequency, checklist completion ratio)
+  is intentionally minimal and auditable. Future signals could include
+  time-of-day patterns, session length variance, and calendar proximity to
+  exam dates — all without compromising the deterministic, zero-token
+  calculation guarantee.
+
+### Product & Experience
+- **Customizable desktop backgrounds** — a planned low-distraction environment
+  feature allowing students to set calming wallpapers within the app interface,
+  supporting focus sessions without switching context to another application.
+- **Calendar integration** — connecting task deadlines to a calendar view so
+  the checklist panel reflects real academic schedules rather than freeform
+  to-do items, enabling the burnout score to weight upcoming deadline pressure
+  as a context signal.
+- **Digital wellbeing OS integration** — the current consent gate enforces
+  privacy at the tool layer, but actual device activity tracking relies on
+  manual timer logging. A future version would integrate with platform-level
+  screen time APIs (with explicit opt-in) to auto-log focus sessions without
+  requiring the student to remember to start and stop the timer.
+- **User identity and persistence** — the current build uses a single hardcoded
+  user ID per session. A future version would add proper authentication so
+  students can log in, access their real history across devices, and maintain
+  a persistent Trophy Wall that grows with them over their academic year.
+- **Crisis resource localization** — the safety gate currently surfaces a
+  general escalation message. A future version would detect the student's
+  institution or region and surface the correct campus counseling contact,
+  local crisis line, or peer support program rather than a generic prompt.

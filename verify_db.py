@@ -5,11 +5,11 @@ def verify():
     cursor = conn.cursor()
     
     # Check Diego's total data
-    count = cursor.execute("SELECT COUNT(*) FROM checkins WHERE user_id = 'Diego'").fetchone()[0]
+    count = cursor.execute("SELECT COUNT(*) FROM checkins WHERE user_id = 'diego'").fetchone()[0]
     print(f"Diego's total records: {count}")
     
     # Check if rollup exists
-    rollups = cursor.execute("SELECT * FROM archive_rollups WHERE user_id = 'Diego'").fetchall()
+    rollups = cursor.execute("SELECT * FROM archive_rollups WHERE user_id = 'diego'").fetchall()
     print(f"Number of rollups found: {len(rollups)}")
     
     if count < 30 and len(rollups) == 0:
