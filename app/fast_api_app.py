@@ -190,7 +190,13 @@ async def get_achievements(user_id: str):
             (user_id,)
         ).fetchall()
         
-        achievements_list = [dict(row) for row in rows]
+        achievements_list = []
+        seen_titles = set()
+        for row in rows:
+            ach = dict(row)
+            if ach["title"] not in seen_titles:
+                seen_titles.add(ach["title"])
+                achievements_list.append(ach)
         return {
             "has_achievements": len(achievements_list) > 0,
             "achievements": achievements_list
